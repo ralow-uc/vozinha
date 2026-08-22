@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Vozinha" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/fondo_noche</item>
+    </style>
+</resources>
