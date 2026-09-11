@@ -33,7 +33,8 @@ import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
 import com.vozinha.app.ui.components.Vinculo
 import com.vozinha.app.ui.theme.VozinhaTheme
-import com.vozinha.app.util.Validaciones
+import com.vozinha.app.util.ExigenciaCorreo
+import com.vozinha.app.util.reglaDeCorreo
 
 /** Formas de recibir el enlace de recuperación. */
 private val MEDIOS_ENVIO = listOf("Por correo electrónico", "Por mensaje de texto")
@@ -52,10 +53,13 @@ fun RecuperarPasswordScreen(
     var correo by rememberSaveable { mutableStateOf("") }
     var medioElegido by rememberSaveable { mutableStateOf(MEDIOS_ENVIO.first()) }
     var intentoEnvio by rememberSaveable { mutableStateOf(false) }
-    var correoDesconocido by rememberSaveable { mutableStateOf(false) }
     var mostrarConfirmacion by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
+
+    // Aquí el correo tiene que existir en el arreglo de usuarios. La regla se
+    // arma con la misma función que usan el login y el registro.
+    val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.DEBE_EXISTIR, onCorreoRegistrado)
 
     Scaffold(topBar = { BarraSuperior("Recuperar contraseña", onVolver) }) { padding ->
         ColumnaFormulario(padding) {
@@ -77,18 +81,11 @@ fun RecuperarPasswordScreen(
 
             CampoTexto(
                 valor = correo,
-                onValorCambia = {
-                    correo = it
-                    correoDesconocido = false
-                },
+                onValorCambia = { correo = it },
                 etiqueta = "Correo electrónico",
                 icono = Icons.Filled.Email,
                 ayuda = "El mismo correo con el que creaste tu cuenta",
-                error = when {
-                    correoDesconocido -> "Ese correo no está registrado en Vozinha"
-                    intentoEnvio -> Validaciones.errorEmail(correo)
-                    else -> null
-                },
+                error = if (intentoEnvio) reglaCorreo(correo) else null,
                 tecladoTipo = KeyboardType.Email,
                 imeAction = ImeAction.Done
             )
@@ -118,18 +115,11 @@ fun RecuperarPasswordScreen(
                 icono = Icons.AutoMirrored.Filled.Send,
                 onClick = {
                     intentoEnvio = true
-                    correoDesconocido = false
-                    when {
-                        Validaciones.errorEmail(correo) != null -> Vibrador.alertar(context)
-                        onCorreoRegistrado(correo) -> {
-                            Vibrador.confirmar(context)
-                            mostrarConfirmacion = true
-                        }
-
-                        else -> {
-                            correoDesconocido = true
-                            Vibrador.alertar(context)
-                        }
+                    if (reglaCorreo(correo) != null) {
+                        Vibrador.alertar(context)
+                    } else {
+                        Vibrador.confirmar(context)
+                        mostrarConfirmacion = true
                     }
                 }
             )

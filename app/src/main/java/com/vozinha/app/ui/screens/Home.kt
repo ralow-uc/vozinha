@@ -57,6 +57,7 @@ import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
 import com.vozinha.app.ui.components.recordarSintetizadorVoz
 import com.vozinha.app.ui.theme.VozinhaTheme
+import com.vozinha.app.util.resumen
 import kotlinx.coroutines.launch
 
 /**
@@ -112,7 +113,8 @@ fun HomeScreen(
                 listo = sintetizador.listo,
                 disponible = sintetizador.disponible,
                 idiomaDisponible = sintetizador.idiomaDisponible,
-                hablando = sintetizador.hablando
+                hablando = sintetizador.hablando,
+                ultimoError = sintetizador.ultimoError
             )
 
             TituloSeccion("Escribe lo que quieres decir")
@@ -262,9 +264,8 @@ fun HomeScreen(
                 encabezadoIzquierdo = "Dato",
                 encabezadoDerecho = "Valor",
                 filas = listOf(
-                    "Nombre" to usuario.nombre,
+                    "Quién eres" to usuario.resumen,
                     "Correo" to usuario.correo,
-                    "Tipo de usuario" to usuario.tipoUsuario.etiqueta,
                     "Comunicación" to usuario.medioPreferido.etiqueta
                 )
             )
@@ -321,7 +322,8 @@ private fun EstadoDelMotor(
     listo: Boolean,
     disponible: Boolean,
     idiomaDisponible: Boolean,
-    hablando: Boolean
+    hablando: Boolean,
+    ultimoError: String?
 ) {
     val (icono, texto, color) = when {
         !disponible -> Triple(
@@ -366,7 +368,17 @@ private fun EstadoDelMotor(
             modifier = Modifier.padding(16.dp)
         ) {
             Icon(imageVector = icono, contentDescription = null, modifier = Modifier.size(26.dp))
-            Text(text = texto, style = MaterialTheme.typography.titleMedium)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(text = texto, style = MaterialTheme.typography.titleMedium)
+                // El fallo capturado por try/catch se escribe en pantalla,
+                // porque quien usa la aplicación no puede oír que algo salió mal.
+                if (ultimoError != null) {
+                    Text(
+                        text = "Detalle del último fallo: $ultimoError",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
     }
 }

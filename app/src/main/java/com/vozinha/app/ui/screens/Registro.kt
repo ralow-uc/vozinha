@@ -50,7 +50,11 @@ import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
 import com.vozinha.app.ui.components.Vinculo
 import com.vozinha.app.ui.theme.VozinhaTheme
+import com.vozinha.app.util.ExigenciaCorreo
 import com.vozinha.app.util.Validaciones
+import com.vozinha.app.util.normalizado
+import com.vozinha.app.util.primerError
+import com.vozinha.app.util.reglaDeCorreo
 import kotlinx.coroutines.launch
 
 /**
@@ -63,6 +67,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RegistroScreen(
     totalUsuarios: Int,
+    onCorreoRegistrado: (String) -> Boolean,
     onRegistrar: (Usuario) -> ResultadoRegistro,
     onRegistroCompleto: () -> Unit,
     onVolver: () -> Unit
@@ -87,6 +92,10 @@ fun RegistroScreen(
         Vibrador.alertar(context)
         scope.launch { snackbarHostState.showSnackbar(mensaje) }
     }
+
+    // Aquí el correo, además de tener formato válido, tiene que estar libre.
+    // reglaDeCorreo devuelve esa regla ya armada y la view solo la aplica.
+    val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.DEBE_SER_NUEVO, onCorreoRegistrado)
 
     Scaffold(
         topBar = { BarraSuperior("Crear cuenta", onVolver) },
@@ -115,7 +124,7 @@ fun RegistroScreen(
                 etiqueta = "Correo electrónico",
                 icono = Icons.Filled.Email,
                 ayuda = "Lo usarás para ingresar a la aplicación",
-                error = if (intentoEnvio) Validaciones.errorEmail(correo) else null,
+                error = if (intentoEnvio) reglaCorreo(correo) else null,
                 tecladoTipo = KeyboardType.Email
             )
 
@@ -212,17 +221,22 @@ fun RegistroScreen(
                 icono = Icons.Filled.PersonAdd,
                 onClick = {
                     intentoEnvio = true
-                    val valido = Validaciones.errorNombre(nombre) == null &&
-                        Validaciones.errorEmail(correo) == null &&
-                        Validaciones.errorPassword(password) == null &&
-                        Validaciones.errorConfirmacion(password, confirmacion) == null
+                    // Cada regla se evalúa solo si las anteriores pasaron, de
+                    // modo que el aviso nombre el problema real y no un
+                    // genérico "revisa los campos".
+                    val error = primerError(
+                        { Validaciones.errorNombre(nombre) },
+                        { reglaCorreo(correo) },
+                        { Validaciones.errorPassword(password) },
+                        { Validaciones.errorConfirmacion(password, confirmacion) },
+                        { if (aceptaTerminos) null else "Debes aceptar los términos para continuar" }
+                    )
                     when {
-                        !valido -> avisar("Revisa los campos marcados en rojo.")
-                        !aceptaTerminos -> avisar("Debes aceptar los términos para continuar.")
+                        error != null -> avisar(error)
                         else -> {
                             val nuevo = Usuario(
-                                nombre = nombre.trim(),
-                                correo = correo.trim(),
+                                nombre = nombre.normalizado(),
+                                correo = correo.normalizado(),
                                 password = password,
                                 tipoUsuario = tipoUsuario,
                                 medioPreferido = medioPreferido
@@ -274,5 +288,5 @@ fun RegistroScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun RegistroPreview() {
-    VozinhaTheme { RegistroScreen(5, { ResultadoRegistro.Exitoso(6) }, {}, {}) }
+    VozinhaTheme { RegistroScreen(5, { false }, { ResultadoRegistro.Exitoso(6) }, {}, {}) }
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import com.vozinha.app.data.FRASES_INICIALES
 import com.vozinha.app.data.Usuario
 import com.vozinha.app.data.UsuariosRepository
+import com.vozinha.app.util.comoFrase
 
 /** Resultado de intentar registrar un usuario nuevo. */
 sealed interface ResultadoRegistro {
@@ -63,7 +64,7 @@ class AppViewModel : ViewModel() {
      * pantalla avise en lugar de duplicarla en silencio.
      */
     fun agregarFrase(texto: String): Boolean {
-        val limpia = texto.trim()
+        val limpia = texto.comoFrase()
         if (limpia.isEmpty()) return false
         if (frases.any { it.equals(limpia, ignoreCase = true) }) return false
         frases = frases + limpia

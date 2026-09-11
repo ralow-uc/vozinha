@@ -58,6 +58,7 @@ fun AppNavGraph(
         composable(Rutas.REGISTRO) {
             RegistroScreen(
                 totalUsuarios = appViewModel.totalUsuarios,
+                onCorreoRegistrado = { correo -> appViewModel.correoRegistrado(correo) },
                 onRegistrar = { usuario -> appViewModel.registrar(usuario) },
                 onRegistroCompleto = { navController.popBackStack() },
                 onVolver = { navController.popBackStack() }

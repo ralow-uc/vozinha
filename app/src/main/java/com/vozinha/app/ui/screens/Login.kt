@@ -42,7 +42,10 @@ import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
 import com.vozinha.app.ui.components.Vinculo
 import com.vozinha.app.ui.theme.VozinhaTheme
+import com.vozinha.app.util.ExigenciaCorreo
 import com.vozinha.app.util.Validaciones
+import com.vozinha.app.util.primerError
+import com.vozinha.app.util.reglaDeCorreo
 import kotlinx.coroutines.launch
 
 /** Contenido de la grilla que explica para qué sirve la aplicación. */
@@ -74,6 +77,10 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    // La regla del correo se arma con reglaDeCorreo: aquí basta con que tenga
+    // formato válido, porque quien decide si la cuenta existe es onIngresar.
+    val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.SOLO_FORMATO)
+
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         ColumnaFormulario(padding) {
             Text(
@@ -97,7 +104,7 @@ fun LoginScreen(
                 etiqueta = "Correo electrónico",
                 icono = Icons.Filled.Email,
                 ayuda = "Ejemplo: nombre@gmail.com",
-                error = if (intentoEnvio) Validaciones.errorEmail(correo) else null,
+                error = if (intentoEnvio) reglaCorreo(correo) else null,
                 tecladoTipo = KeyboardType.Email
             )
 
@@ -118,9 +125,13 @@ fun LoginScreen(
                 icono = Icons.AutoMirrored.Filled.Login,
                 onClick = {
                     intentoEnvio = true
-                    val completo = Validaciones.errorEmail(correo) == null &&
-                        Validaciones.errorPassword(password) == null
-                    if (!completo) {
+                    // primerError aplica las reglas en orden y devuelve la
+                    // primera que falla, o null si el formulario está completo.
+                    val error = primerError(
+                        { reglaCorreo(correo) },
+                        { Validaciones.errorPassword(password) }
+                    )
+                    if (error != null) {
                         Vibrador.alertar(context)
                     } else if (!onIngresar(correo, password)) {
                         Vibrador.alertar(context)

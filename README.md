@@ -35,7 +35,7 @@ confirma con un aviso en pantalla y con vibración, nunca con sonido.
 | Textos | Las cuatro views |
 | Combo box | Registro, tipo de usuario |
 | Radio buttons | Registro y Recuperar, en grilla |
-| Check box | Login, Registro |
+| Check list | Login y Registro, casillas de recordar correo y aceptar términos |
 | Grilla | Login, Registro, Recuperar, Comunicación |
 | Tabla | Las cuatro views |
 
@@ -67,6 +67,76 @@ comprueba que el motor se haya inicializado y que la voz en español esté
 instalada, y muestra ambos estados en pantalla: si algo falla, la persona
 usuaria no puede oírlo, así que tiene que verlo.
 
+Cada llamada al motor y al vibrador va dentro de `intentar`, que captura la
+excepción y la deja escrita en la tarjeta de estado en lugar de dejar caer la
+aplicación. Un teléfono sin motor de voz instalado, o que niegue el permiso de
+vibración, no rompe el resto de las funciones.
+
+## Sintaxis de Kotlin aplicada
+
+Estos son los elementos del lenguaje que usa el proyecto y dónde encontrarlos.
+
+| Elemento de Kotlin | Dónde se usa |
+|---|---|
+| `Array` | `UsuariosRepository`, arreglo de los cinco usuarios con sus contraseñas |
+| `data class` | `Usuario` |
+| `enum class` | `TipoUsuario`, `MedioComunicacion` y `ExigenciaCorreo` |
+| `sealed interface` | `ResultadoRegistro`, con `data class` y `data object` |
+| Funciones de extensión | `normalizado()`, `comoFrase()`, `conCorreo()` y `mensajeLegible()` |
+| Propiedades de extensión | `String.esCorreo` y `Usuario.resumen`, declaradas con `get()` |
+| Funciones de orden superior | `reglaDeCorreo()` devuelve una función; `primerError()` recibe funciones |
+| `typealias` | `ReglaDeCampo`, el tipo de función que valida un campo |
+| Lambdas | Las reglas de los formularios y las operaciones de colección |
+| Funciones inline | `intentar()`, que además recibe una lambda |
+| `try` / `catch` | Dentro de `intentar()`, alrededor del motor de voz y del vibrador |
+| Seguridad nula | `Usuario?`, `String?` y los operadores `?.`, `?:` y `takeIf` |
+| Genéricos | `GrillaSeleccionUnica<T>` e `intentar<T>` |
+
+### Funciones de orden superior en los formularios
+
+Las tres views de acceso validan el mismo correo, pero cada una le exige algo
+distinto. En lugar de repetir la validación, `reglaDeCorreo` construye y
+devuelve la regla que cada view necesita:
+
+```kotlin
+// Login: basta con que tenga formato de correo
+val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.SOLO_FORMATO)
+
+// Registro: además, nadie más puede tenerlo
+val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.DEBE_SER_NUEVO, onCorreoRegistrado)
+
+// Recuperar contraseña: además, tiene que existir
+val reglaCorreo = reglaDeCorreo(ExigenciaCorreo.DEBE_EXISTIR, onCorreoRegistrado)
+```
+
+Gracias a eso el registro avisa que el correo ya está tomado mientras la
+persona escribe, y no recién al enviar el formulario.
+
+`primerError` recibe las reglas como funciones y devuelve la primera que falla,
+sin evaluar las siguientes, de modo que el aviso nombre el problema real:
+
+```kotlin
+val error = primerError(
+    { Validaciones.errorNombre(nombre) },
+    { reglaCorreo(correo) },
+    { Validaciones.errorPassword(password) },
+    { Validaciones.errorConfirmacion(password, confirmacion) },
+    { if (aceptaTerminos) null else "Debes aceptar los términos para continuar" }
+)
+```
+
+### Manejo de errores
+
+```kotlin
+inline fun <T> intentar(alFallar: (Exception) -> Unit = {}, bloque: () -> T): T? =
+    try {
+        bloque()
+    } catch (error: Exception) {
+        alFallar(error)
+        null
+    }
+```
+
 ## Estructura
 
 Sigue la organización por responsabilidades que usa el material de la
@@ -86,7 +156,8 @@ app/src/main/java/com/vozinha/app/
 │   ├── screens/             Las cuatro views
 │   └── theme/               Colores y tipografía
 └── util/
-    └── Validaciones.kt      Reglas de validación de formularios
+    ├── Validaciones.kt      Reglas de validación de formularios
+    └── Extensiones.kt      Extensiones, orden superior y manejo de errores
 ```
 
 ## Ejecutar y probar
@@ -101,4 +172,3 @@ app/src/main/java/com/vozinha/app/
 El informe técnico, los mockups y el diagrama EDT de la entrega se mantienen
 fuera de este repositorio, junto a la carpeta del proyecto, porque son
 material de la evaluación y no del código.
-# vozinha

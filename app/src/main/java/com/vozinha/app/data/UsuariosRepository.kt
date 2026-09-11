@@ -1,5 +1,7 @@
 package com.vozinha.app.data
 
+import com.vozinha.app.util.conCorreo
+import com.vozinha.app.util.normalizado
 
 
 /**
@@ -27,25 +29,31 @@ object UsuariosRepository {
     fun obtenerUsuarios(): List<Usuario> = registrados.toList()
 
     /** Indica si el correo ya está tomado, sin distinguir mayúsculas. */
-    fun existeCorreo(correo: String): Boolean =
-        registrados.any { it.correo.equals(correo.trim(), ignoreCase = true) }
+    fun existeCorreo(correo: String): Boolean = buscarPorCorreo(correo) != null
 
     /** Agrega un usuario. Devuelve false si el correo ya estaba registrado. */
     fun agregarUsuario(usuario: Usuario): Boolean {
         if (existeCorreo(usuario.correo)) return false
-        registrados.add(usuario.copy(correo = usuario.correo.trim()))
+        registrados.add(usuario.copy(correo = usuario.correo.normalizado()))
         return true
     }
 
-    /** Valida las credenciales de acceso. Devuelve el usuario o null. */
+    /**
+     * Valida las credenciales de acceso. Devuelve el usuario o null.
+     *
+     * takeIf deja la expresión en null cuando la contraseña no calza, de modo
+     * que el correo inexistente y la clave equivocada se resuelvan igual.
+     */
     fun validarAcceso(correo: String, password: String): Usuario? =
-        registrados.firstOrNull {
-            it.correo.equals(correo.trim(), ignoreCase = true) && it.password == password
-        }
+        buscarPorCorreo(correo)?.takeIf { it.password == password }
 
-    /** Busca un usuario por su correo, para recuperar la contraseña. */
-    fun buscarPorCorreo(correo: String): Usuario? =
-        registrados.firstOrNull { it.correo.equals(correo.trim(), ignoreCase = true) }
+    /**
+     * Busca un usuario por su correo.
+     *
+     * Las tres búsquedas del repositorio se apoyan en la misma función de
+     * extensión, así la comparación de correos está escrita una sola vez.
+     */
+    fun buscarPorCorreo(correo: String): Usuario? = registrados.conCorreo(correo)
 
     /** Deja el arreglo con los cinco usuarios iniciales. */
     fun restaurar() {
