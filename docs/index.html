@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vozinha - Descarga la aplicación</title>
+<meta name="description" content="Vozinha convierte lo que escribes en voz audible. Aplicación Android de accesibilidad para personas con discapacidad sensorial auditiva.">
+<style>
+  :root {
+    --azul: #1F4E96;
+    --azul-claro: #D6E2F7;
+    --texto: #10223B;
+    --gris: #5B6B80;
+    --fondo: #F7F9FC;
+    --borde: #DCE4F0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--texto);
+    background: var(--fondo);
+    line-height: 1.6;
+  }
+  .contenedor { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  header { background: #fff; border-bottom: 1px solid var(--borde); padding: 48px 0 40px; }
+  .ficha { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+  .icono {
+    width: 112px; height: 112px; border-radius: 26px; flex-shrink: 0;
+    background: var(--azul); color: #fff; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 54px; font-weight: 700;
+  }
+  .ficha h1 { margin: 0 0 4px; font-size: 34px; letter-spacing: -0.5px; }
+  .autor { color: var(--azul); font-weight: 600; margin: 0 0 14px; }
+  .metricas { display: flex; gap: 32px; flex-wrap: wrap; margin: 18px 0 22px; }
+  .metrica { text-align: left; }
+  .metrica .valor { display: block; font-size: 18px; font-weight: 700; }
+  .metrica .etiqueta { font-size: 13px; color: var(--gris); }
+  .boton {
+    display: inline-block; background: var(--azul); color: #fff;
+    text-decoration: none; padding: 14px 34px; border-radius: 999px;
+    font-weight: 700; font-size: 17px;
+  }
+  .boton:hover { background: #163A72; }
+  .nota-descarga { font-size: 13px; color: var(--gris); margin-top: 10px; }
+  section { padding: 40px 0; border-bottom: 1px solid var(--borde); }
+  section h2 { font-size: 22px; margin: 0 0 14px; }
+  .capturas { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; }
+  .capturas img {
+    height: 420px; border-radius: 14px; border: 1px solid var(--borde); background: #fff;
+  }
+  ul.funciones { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;
+                 grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  ul.funciones li { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 16px 18px; }
+  ul.funciones strong { display: block; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--borde); font-size: 15px; }
+  th { background: var(--azul-claro); font-weight: 700; }
+  tr:last-child td { border-bottom: none; }
+  td.hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+  footer { padding: 32px 0 56px; color: var(--gris); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="contenedor ficha">
+    <div class="icono">V</div>
+    <div>
+      <h1>Vozinha</h1>
+      <p class="autor">Accesibilidad · Comunicación</p>
+      <p>Tu voz cuando el sonido no alcanza. Escribe lo que necesitas decir y el teléfono lo dice en voz alta por ti.</p>
+      <div class="metricas">
+        <div class="metrica"><span class="valor">3.0</span><span class="etiqueta">Versión</span></div>
+        <div class="metrica"><span class="valor">15.7 MB</span><span class="etiqueta">Tamaño</span></div>
+        <div class="metrica"><span class="valor">Android 7.0+</span><span class="etiqueta">Requiere</span></div>
+        <div class="metrica"><span class="valor">Español</span><span class="etiqueta">Idioma</span></div>
+      </div>
+      <a class="boton" href="vozinha-3.0.apk" download>Descargar APK</a>
+      <p class="nota-descarga">Instalación fuera de la tienda: activa "Instalar aplicaciones desconocidas" para tu navegador antes de abrir el archivo.</p>
+    </div>
+  </div>
+</header>
+
+<section class="contenedor">
+  <h2>Para quién es</h2>
+  <p>
+    Para personas con discapacidad sensorial auditiva. En un comercio, en un consultorio o en la calle,
+    la conversación ocurre en voz alta y quien no oye queda fuera. Vozinha convierte el texto escrito en
+    voz audible para el interlocutor, y devuelve toda la confirmación de forma visual y con vibración,
+    nunca con sonido.
+  </p>
+</section>
+
+<section class="contenedor">
+  <h2>Qué hace</h2>
+  <ul class="funciones">
+    <li><strong>Escribir</strong>Prepara tus frases con calma y guárdalas para tenerlas listas cuando las necesites.</li>
+    <li><strong>Hablar</strong>Toca un mensaje y el teléfono lo dice en voz alta. Los favoritos quedan arriba.</li>
+    <li><strong>Buscar dispositivo</strong>Muestra dónde estás para que alguien te encuentre, sin tener que explicarlo hablando.</li>
+    <li><strong>Tus datos te siguen</strong>La cuenta y los mensajes quedan guardados, así cambias de teléfono sin perder nada.</li>
+  </ul>
+</section>
+
+<section class="contenedor">
+  <h2>Capturas</h2>
+  <div class="capturas">
+    <img src="capturas/1-login.png" alt="Pantalla de inicio de sesión de Vozinha">
+    <img src="capturas/2-menu.png" alt="Menú principal con las opciones Escribir, Hablar y Buscar dispositivo">
+    <img src="capturas/3-escribir.png" alt="Pantalla para escribir y guardar mensajes">
+    <img src="capturas/4-hablar.png" alt="Pantalla que reproduce los mensajes en voz alta">
+    <img src="capturas/5-buscar.png" alt="Pantalla que muestra la ubicación del dispositivo">
+  </div>
+</section>
+
+<section class="contenedor">
+  <h2>Detalles técnicos</h2>
+  <table>
+    <tr><th>Dato</th><th>Valor</th></tr>
+    <tr><td>Paquete</td><td>com.vozinha.app</td></tr>
+    <tr><td>Versión</td><td>3.0 (versionCode 3)</td></tr>
+    <tr><td>Versión mínima de Android</td><td>7.0 (API 24)</td></tr>
+    <tr><td>Compilado contra</td><td>API 36</td></tr>
+    <tr><td>Firma</td><td>Esquemas v2 y v3, certificado RSA de 2048 bits</td></tr>
+    <tr><td>Permisos</td><td>Internet, vibración y ubicación</td></tr>
+    <tr><td>Backend</td><td>Firebase Authentication y Cloud Firestore</td></tr>
+    <tr><td>SHA-256 del archivo</td><td class="hash">bc55756b9ef3f20dd66c5391c4256c347fe5e7f78bd362de1750c042f0ef9be8</td></tr>
+  </table>
+</section>
+
+<footer class="contenedor">
+  <p>
+    Proyecto académico de la asignatura Desarrollo de Aplicaciones Móviles.
+    Esta página simula una tienda de distribución para descargar e instalar el APK firmado.
+  </p>
+</footer>
+
+</body>
+</html>

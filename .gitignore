@@ -10,7 +10,12 @@
 local.properties
 /app/build
 /app/release
-*.apk
 *.aab
 *.log
-/docs
+
+# Los APK de las compilaciones locales no se versionan, salvo el que se
+# publica en la pagina de descarga.
+*.apk
+!/docs/*.apk
+
+# La carpeta docs es el sitio de descarga que se publica con GitHub Pages.

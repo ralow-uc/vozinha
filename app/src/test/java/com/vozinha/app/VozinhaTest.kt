@@ -114,110 +114,30 @@ class VozinhaTest {
     }
 
     @Test
-    fun `inicia sesion con un usuario del arreglo`() {
-        val viewModel = AppViewModel()
-        assertTrue(viewModel.iniciarSesion("camila@gmail.com", "hola1234"))
-        assertEquals("Camila Rojas", viewModel.sesionActiva?.nombre)
-    }
+    fun `actualiza la ficha de un usuario conservando su correo`() {
+        val camila = UsuariosRepository.buscarPorCorreo("camila@gmail.com")!!
 
-    @Test
-    fun `rechaza credenciales incorrectas y no abre sesion`() {
-        val viewModel = AppViewModel()
-        assertFalse(viewModel.iniciarSesion("camila@gmail.com", "otra"))
-        assertNull(viewModel.sesionActiva)
-    }
-
-    @Test
-    fun `el usuario recien registrado puede ingresar`() {
-        val viewModel = AppViewModel()
-        val antes = viewModel.totalUsuarios
-
-        val resultado = viewModel.registrar(usuarioNuevo("recien@gmail.com"))
-
-        assertTrue(resultado is ResultadoRegistro.Exitoso)
-        assertEquals(antes + 1, viewModel.totalUsuarios)
-        assertTrue(viewModel.iniciarSesion("recien@gmail.com", "clave123"))
-    }
-
-    @Test
-    fun `avisa cuando el correo ya esta registrado`() {
-        val viewModel = AppViewModel()
-        val antes = viewModel.totalUsuarios
-
-        assertEquals(
-            ResultadoRegistro.CorreoRepetido,
-            viewModel.registrar(usuarioNuevo("camila@gmail.com"))
+        val cambiado = UsuariosRepository.reemplazar(
+            correo = "camila@gmail.com",
+            usuario = camila.copy(nombre = "Camila Rojas Díaz")
         )
-        assertEquals(antes, viewModel.totalUsuarios)
+
+        assertTrue(cambiado)
+        assertEquals("Camila Rojas Díaz", UsuariosRepository.buscarPorCorreo("camila@gmail.com")?.nombre)
+        assertEquals(5, UsuariosRepository.obtenerUsuarios().size)
     }
 
     @Test
-    fun `agrega una frase nueva a la lista`() {
-        val viewModel = AppViewModel()
-        val antes = viewModel.frases.size
+    fun `elimina un usuario del arreglo`() {
+        assertTrue(UsuariosRepository.eliminarUsuario("JOSEFA@gmail.com"))
 
-        assertTrue(viewModel.agregarFrase("¿Me puedes repetir?"))
-
-        assertEquals(antes + 1, viewModel.frases.size)
-        assertTrue(viewModel.frases.contains("¿Me puedes repetir?"))
+        assertNull(UsuariosRepository.buscarPorCorreo("josefa@gmail.com"))
+        assertEquals(4, UsuariosRepository.obtenerUsuarios().size)
     }
 
     @Test
-    fun `recorta los espacios de la frase agregada`() {
-        val viewModel = AppViewModel()
-
-        viewModel.agregarFrase("   Buenos días   ")
-
-        assertTrue(viewModel.frases.contains("Buenos días"))
-    }
-
-    @Test
-    fun `rechaza una frase vacia`() {
-        val viewModel = AppViewModel()
-        val antes = viewModel.frases.size
-
-        assertFalse(viewModel.agregarFrase("   "))
-
-        assertEquals(antes, viewModel.frases.size)
-    }
-
-    @Test
-    fun `rechaza una frase repetida sin distinguir mayusculas`() {
-        val viewModel = AppViewModel()
-        val antes = viewModel.frases.size
-
-        assertFalse(viewModel.agregarFrase("hola, SOY una persona sorda."))
-
-        assertEquals(antes, viewModel.frases.size)
-    }
-
-    @Test
-    fun `elimina una frase de la lista`() {
-        val viewModel = AppViewModel()
-        val frase = viewModel.frases.first()
-
-        viewModel.eliminarFrase(frase)
-
-        assertFalse(viewModel.frases.contains(frase))
-        assertEquals(FRASES_INICIALES.size - 1, viewModel.frases.size)
-    }
-
-    @Test
-    fun `eliminar una frase inexistente no altera la lista`() {
-        val viewModel = AppViewModel()
-
-        viewModel.eliminarFrase("frase que no existe")
-
-        assertEquals(FRASES_INICIALES.size, viewModel.frases.size)
-    }
-
-    @Test
-    fun `cerrar sesion deja la aplicacion sin usuario activo`() {
-        val viewModel = AppViewModel()
-        viewModel.iniciarSesion("camila@gmail.com", "hola1234")
-
-        viewModel.cerrarSesion()
-
-        assertNull(viewModel.sesionActiva)
+    fun `no elimina un usuario que no existe`() {
+        assertFalse(UsuariosRepository.eliminarUsuario("nadie@gmail.com"))
+        assertEquals(5, UsuariosRepository.obtenerUsuarios().size)
     }
 }

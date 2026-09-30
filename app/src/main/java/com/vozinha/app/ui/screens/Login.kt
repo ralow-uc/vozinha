@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +41,11 @@ import com.vozinha.app.ui.components.ItemInformativo
 import com.vozinha.app.ui.components.TablaDatos
 import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vozinha.app.ui.components.Vinculo
 import com.vozinha.app.ui.theme.VozinhaTheme
 import com.vozinha.app.util.ExigenciaCorreo
+import com.vozinha.app.util.PreferenciasUsuario
 import com.vozinha.app.util.Validaciones
 import com.vozinha.app.util.primerError
 import com.vozinha.app.util.reglaDeCorreo
@@ -64,7 +67,8 @@ private val PRESTACIONES = listOf(
 @Composable
 fun LoginScreen(
     usuarios: List<Usuario>,
-    onIngresar: (String, String) -> Boolean,
+    ocupado: Boolean,
+    onIngresar: (String, String, (String?) -> Unit) -> Unit,
     onIrARegistro: () -> Unit,
     onIrARecuperar: () -> Unit
 ) {
@@ -76,6 +80,21 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // El correo guardado llega como Flow desde DataStore. La extensión KTX
+    // collectAsStateWithLifecycle lo observa solo mientras la pantalla está
+    // visible, de modo que no se siga leyendo en segundo plano.
+    val preferencias = remember(context) { PreferenciasUsuario(context) }
+    val correoGuardado by preferencias.correoRecordado.collectAsStateWithLifecycle(initialValue = "")
+    var tomoElCorreoGuardado by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(correoGuardado) {
+        if (!tomoElCorreoGuardado && correoGuardado.isNotEmpty()) {
+            correo = correoGuardado
+            recordarCorreo = true
+            tomoElCorreoGuardado = true
+        }
+    }
 
     // La regla del correo se arma con reglaDeCorreo: aquí basta con que tenga
     // formato válido, porque quien decide si la cuenta existe es onIngresar.
@@ -121,8 +140,9 @@ fun LoginScreen(
             FilaCheck("Recordar mi correo", recordarCorreo) { recordarCorreo = it }
 
             BotonPrimario(
-                texto = "Ingresar",
+                texto = if (ocupado) "Verificando..." else "Ingresar",
                 icono = Icons.AutoMirrored.Filled.Login,
+                habilitado = !ocupado,
                 onClick = {
                     intentoEnvio = true
                     // primerError aplica las reglas en orden y devuelve la
@@ -133,12 +153,18 @@ fun LoginScreen(
                     )
                     if (error != null) {
                         Vibrador.alertar(context)
-                    } else if (!onIngresar(correo, password)) {
-                        Vibrador.alertar(context)
+                    } else {
+                        // El acceso consulta el backend, así que la respuesta
+                        // llega por la función que se entrega como parámetro.
                         scope.launch {
-                            snackbarHostState.showSnackbar(
-                                "El correo o la contraseña no coinciden con ninguna cuenta."
-                            )
+                            if (recordarCorreo) preferencias.recordarCorreo(correo)
+                            else preferencias.olvidarCorreo()
+                        }
+                        onIngresar(correo, password) { fallo ->
+                            if (fallo != null) {
+                                Vibrador.alertar(context)
+                                scope.launch { snackbarHostState.showSnackbar(fallo) }
+                            }
                         }
                     }
                 }
@@ -170,6 +196,12 @@ fun LoginScreen(
 @Composable
 private fun LoginPreview() {
     VozinhaTheme {
-        LoginScreen(UsuariosRepository.obtenerUsuarios(), { _, _ -> true }, {}, {})
+        LoginScreen(
+            usuarios = UsuariosRepository.obtenerUsuarios(),
+            ocupado = false,
+            onIngresar = { _, _, listo -> listo(null) },
+            onIrARegistro = {},
+            onIrARecuperar = {}
+        )
     }
 }

@@ -13,31 +13,22 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,69 +36,53 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.vozinha.app.data.FRASES_INICIALES
-import com.vozinha.app.data.Usuario
-import com.vozinha.app.data.UsuariosRepository
+import com.vozinha.app.data.Mensaje
 import com.vozinha.app.ui.components.BarraSuperior
 import com.vozinha.app.ui.components.BotonPrimario
 import com.vozinha.app.ui.components.BotonSecundario
 import com.vozinha.app.ui.components.ColumnaFormulario
-import com.vozinha.app.ui.components.TablaDatos
 import com.vozinha.app.ui.components.TituloSeccion
 import com.vozinha.app.ui.components.Vibrador
 import com.vozinha.app.ui.components.recordarSintetizadorVoz
 import com.vozinha.app.ui.theme.VozinhaTheme
-import com.vozinha.app.util.resumen
-import kotlinx.coroutines.launch
 
 /**
- * View principal de comunicación.
+ * View Hablar: el teléfono dice en voz alta lo que la persona eligió.
  *
- * La persona escribe y el teléfono habla por ella. Como no puede oír el
- * resultado, cada envío se confirma con un aviso visible y una vibración.
+ * Los mensajes guardados aparecen primero, ordenados con los favoritos
+ * arriba, porque en una conversación real no hay tiempo para buscar. Cada
+ * reproducción se confirma en pantalla y con vibración, nunca con sonido.
  */
 @Composable
-fun HomeScreen(
-    usuario: Usuario,
-    frases: List<String>,
+fun HablarScreen(
+    mensajes: List<Mensaje>,
     anchoPantalla: WindowWidthSizeClass,
-    onAgregarFrase: (String) -> Boolean,
-    onEliminarFrase: (String) -> Unit,
-    onCerrarSesion: () -> Unit
+    onRegistrarReproduccion: (String) -> Unit,
+    onVolver: () -> Unit
 ) {
-    var mensaje by rememberSaveable { mutableStateOf("") }
+    var libre by rememberSaveable { mutableStateOf("") }
     var ultimoDicho by rememberSaveable { mutableStateOf<String?>(null) }
-    var fraseNueva by rememberSaveable { mutableStateOf("") }
-    var fraseAEliminar by rememberSaveable { mutableStateOf<String?>(null) }
 
     val sintetizador = recordarSintetizadorVoz()
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val columnas = if (anchoPantalla == WindowWidthSizeClass.Compact) 1 else 2
 
-    fun decir(texto: String) {
+    // Los favoritos quedan arriba y, dentro de cada grupo, los más recientes.
+    val ordenados = mensajes.sortedWith(
+        compareByDescending<Mensaje> { it.favorito }.thenByDescending { it.creadoEn }
+    )
+
+    fun decir(texto: String, id: String?) {
         if (sintetizador.hablar(texto)) {
-            ultimoDicho = texto.trim()
+            ultimoDicho = texto
+            id?.let(onRegistrarReproduccion)
             Vibrador.confirmar(context)
         } else {
             Vibrador.alertar(context)
         }
     }
 
-    Scaffold(
-        topBar = {
-            BarraSuperior("Hola, ${usuario.nombre.substringBefore(' ')}") {
-                IconButton(onClick = onCerrarSesion) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = "Cerrar sesión"
-                    )
-                }
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    Scaffold(topBar = { BarraSuperior("Hablar", onVolver) }) { padding ->
         ColumnaFormulario(padding) {
             EstadoDelMotor(
                 listo = sintetizador.listo,
@@ -115,36 +90,6 @@ fun HomeScreen(
                 idiomaDisponible = sintetizador.idiomaDisponible,
                 hablando = sintetizador.hablando,
                 ultimoError = sintetizador.ultimoError
-            )
-
-            TituloSeccion("Escribe lo que quieres decir")
-
-            OutlinedTextField(
-                value = mensaje,
-                onValueChange = { mensaje = it },
-                label = { Text("Tu mensaje") },
-                placeholder = { Text("Por ejemplo: necesito ayuda") },
-                minLines = 3,
-                textStyle = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp)
-            )
-
-            BotonPrimario(
-                texto = "Decirlo en voz alta",
-                icono = Icons.Filled.RecordVoiceOver,
-                habilitado = sintetizador.listo && mensaje.isNotBlank(),
-                onClick = { decir(mensaje) }
-            )
-
-            BotonSecundario(
-                texto = "Detener",
-                icono = Icons.Filled.Stop,
-                onClick = {
-                    sintetizador.detener()
-                    Vibrador.confirmar(context)
-                }
             )
 
             AnimatedVisibility(visible = ultimoDicho != null) {
@@ -173,26 +118,26 @@ fun HomeScreen(
                 }
             }
 
-            TituloSeccion("Frases rápidas")
+            TituloSeccion("Toca un mensaje para decirlo")
 
-            if (frases.isEmpty()) {
+            if (ordenados.isEmpty()) {
                 Text(
-                    text = "No te quedan frases guardadas. Agrega una abajo.",
+                    text = "Todavía no tienes mensajes. Guárdalos desde Escribir.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            frases.chunked(columnas).forEach { fila ->
+            ordenados.chunked(columnas).forEach { fila ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    fila.forEach { frase ->
+                    fila.forEach { mensaje ->
                         Card(
-                            onClick = { if (sintetizador.listo) decir(frase) },
+                            onClick = { if (sintetizador.listo) decir(mensaje.texto, mensaje.id) },
                             shape = MaterialTheme.shapes.medium,
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
@@ -205,117 +150,69 @@ fun HomeScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier
                                     .fillMaxHeight()
-                                    .padding(start = 14.dp, top = 4.dp, bottom = 4.dp)
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
+                                if (mensaje.favorito) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Star,
+                                        contentDescription = "Favorito",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                                 Text(
-                                    text = frase,
+                                    text = mensaje.texto,
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.weight(1f)
                                 )
-                                IconButton(onClick = { fraseAEliminar = frase }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.DeleteOutline,
-                                        contentDescription = "Eliminar la frase: $frase",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
                             }
                         }
                     }
-                    repeat(columnas - fila.size) { Box(modifier = Modifier.weight(1f)) }
+                    repeat(columnas - fila.size) { Box(Modifier.weight(1f)) }
                 }
             }
 
+            TituloSeccion("O escribe algo puntual")
+
             OutlinedTextField(
-                value = fraseNueva,
-                onValueChange = { fraseNueva = it },
-                label = { Text("Nueva frase") },
-                placeholder = { Text("Por ejemplo: ¿me puedes repetir?") },
-                singleLine = true,
+                value = libre,
+                onValueChange = { libre = it },
+                label = { Text("Decir una sola vez") },
+                placeholder = { Text("Esto no se guarda") },
+                minLines = 2,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 68.dp)
+                    .heightIn(min = 96.dp)
+            )
+
+            BotonPrimario(
+                texto = "Decirlo en voz alta",
+                icono = Icons.Filled.RecordVoiceOver,
+                habilitado = sintetizador.listo && libre.isNotBlank(),
+                onClick = { decir(libre, null) }
             )
 
             BotonSecundario(
-                texto = "Agregar frase",
-                icono = Icons.Filled.Add,
+                texto = "Detener",
+                icono = Icons.Filled.Stop,
                 onClick = {
-                    if (onAgregarFrase(fraseNueva)) {
-                        fraseNueva = ""
-                        Vibrador.confirmar(context)
-                    } else {
-                        Vibrador.alertar(context)
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                "Escribe una frase que no esté repetida."
-                            )
-                        }
-                    }
+                    sintetizador.detener()
+                    Vibrador.confirmar(context)
                 }
             )
-
-            TituloSeccion("Tu perfil")
-
-            TablaDatos(
-                encabezadoIzquierdo = "Dato",
-                encabezadoDerecho = "Valor",
-                filas = listOf(
-                    "Quién eres" to usuario.resumen,
-                    "Correo" to usuario.correo,
-                    "Comunicación" to usuario.medioPreferido.etiqueta
-                )
-            )
         }
     }
-
-    val frasePendiente = fraseAEliminar
-    if (frasePendiente != null) {
-        DialogoEliminarFrase(
-            frase = frasePendiente,
-            onConfirmar = {
-                onEliminarFrase(frasePendiente)
-                fraseAEliminar = null
-                Vibrador.confirmar(context)
-            },
-            onCancelar = { fraseAEliminar = null }
-        )
-    }
-}
-
-/** Diálogo de confirmación para borrar una frase. */
-@Composable
-private fun DialogoEliminarFrase(
-    frase: String,
-    onConfirmar: () -> Unit,
-    onCancelar: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onCancelar,
-        title = { Text("¿Eliminar esta frase?") },
-        text = {
-            Text(
-                text = "Se quitará de tus frases rápidas:\n\n\"$frase\"",
-                style = MaterialTheme.typography.bodyLarge
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirmar) { Text("Eliminar") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancelar) { Text("Cancelar") }
-        }
-    )
 }
 
 /**
- * Aviso permanente del estado del motor de voz.
+ * Tarjeta con el estado del motor de voz.
  *
- * Sustituye a la señal sonora que una persona oyente usaría para darse cuenta
- * de que la aplicación está lista.
+ * La persona usuaria no puede oír si el motor funcionó, así que el estado y el
+ * detalle del último fallo tienen que estar escritos en pantalla.
  */
 @Composable
 private fun EstadoDelMotor(
@@ -370,8 +267,6 @@ private fun EstadoDelMotor(
             Icon(imageVector = icono, contentDescription = null, modifier = Modifier.size(26.dp))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(text = texto, style = MaterialTheme.typography.titleMedium)
-                // El fallo capturado por try/catch se escribe en pantalla,
-                // porque quien usa la aplicación no puede oír que algo salió mal.
                 if (ultimoError != null) {
                     Text(
                         text = "Detalle del último fallo: $ultimoError",
@@ -385,15 +280,16 @@ private fun EstadoDelMotor(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun HomePreview() {
+private fun HablarPreview() {
     VozinhaTheme {
-        HomeScreen(
-            usuario = UsuariosRepository.obtenerUsuarios().first(),
-            frases = FRASES_INICIALES,
+        HablarScreen(
+            mensajes = listOf(
+                Mensaje("1", "Necesito ayuda, por favor", 2L, 3, true),
+                Mensaje("2", "¿Me puedes escribir lo que dijiste?", 1L, 0, false)
+            ),
             anchoPantalla = WindowWidthSizeClass.Compact,
-            onAgregarFrase = { true },
-            onEliminarFrase = {},
-            onCerrarSesion = {}
+            onRegistrarReproduccion = {},
+            onVolver = {}
         )
     }
 }

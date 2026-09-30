@@ -4,7 +4,6 @@ import com.vozinha.app.data.MedioComunicacion
 import com.vozinha.app.data.TipoUsuario
 import com.vozinha.app.data.Usuario
 import com.vozinha.app.data.UsuariosRepository
-import com.vozinha.app.ui.AppViewModel
 import com.vozinha.app.util.ExigenciaCorreo
 import com.vozinha.app.util.comoFrase
 import com.vozinha.app.util.conCorreo
@@ -182,11 +181,8 @@ class ExtensionesTest {
     }
 
     @Test
-    fun `la frase se guarda pareja y no se repite por los espacios`() {
-        val viewModel = AppViewModel()
-
-        assertTrue(viewModel.agregarFrase("  necesito   un   intérprete "))
-        assertTrue(viewModel.frases.contains("Necesito un intérprete"))
-        assertFalse(viewModel.agregarFrase("necesito un intérprete"))
+    fun `comoFrase deja pareja la frase que se guarda`() {
+        assertEquals("Necesito un intérprete", "  necesito   un   intérprete ".comoFrase())
+        assertEquals("Necesito un intérprete", "necesito un intérprete".comoFrase())
     }
 }

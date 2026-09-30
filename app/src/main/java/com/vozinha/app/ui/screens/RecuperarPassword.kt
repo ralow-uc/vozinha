@@ -47,13 +47,16 @@ private val MEDIOS_ENVIO = listOf("Por correo electrónico", "Por mensaje de tex
  */
 @Composable
 fun RecuperarPasswordScreen(
+    ocupado: Boolean,
     onCorreoRegistrado: (String) -> Boolean,
+    onRecuperar: (String, (String?) -> Unit) -> Unit,
     onVolver: () -> Unit
 ) {
     var correo by rememberSaveable { mutableStateOf("") }
     var medioElegido by rememberSaveable { mutableStateOf(MEDIOS_ENVIO.first()) }
     var intentoEnvio by rememberSaveable { mutableStateOf(false) }
     var mostrarConfirmacion by rememberSaveable { mutableStateOf(false) }
+    var errorEnvio by rememberSaveable { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
 
@@ -81,11 +84,14 @@ fun RecuperarPasswordScreen(
 
             CampoTexto(
                 valor = correo,
-                onValorCambia = { correo = it },
+                onValorCambia = {
+                    correo = it
+                    errorEnvio = null
+                },
                 etiqueta = "Correo electrónico",
                 icono = Icons.Filled.Email,
                 ayuda = "El mismo correo con el que creaste tu cuenta",
-                error = if (intentoEnvio) reglaCorreo(correo) else null,
+                error = if (intentoEnvio) (reglaCorreo(correo) ?: errorEnvio) else null,
                 tecladoTipo = KeyboardType.Email,
                 imeAction = ImeAction.Done
             )
@@ -111,15 +117,24 @@ fun RecuperarPasswordScreen(
             )
 
             BotonPrimario(
-                texto = "Enviar instrucciones",
+                texto = if (ocupado) "Enviando..." else "Enviar instrucciones",
                 icono = Icons.AutoMirrored.Filled.Send,
+                habilitado = !ocupado,
                 onClick = {
                     intentoEnvio = true
                     if (reglaCorreo(correo) != null) {
                         Vibrador.alertar(context)
                     } else {
-                        Vibrador.confirmar(context)
-                        mostrarConfirmacion = true
+                        // El envío lo hace el servicio de autenticación.
+                        onRecuperar(correo) { fallo ->
+                            if (fallo == null) {
+                                Vibrador.confirmar(context)
+                                mostrarConfirmacion = true
+                            } else {
+                                Vibrador.alertar(context)
+                                errorEnvio = fallo
+                            }
+                        }
                     }
                 }
             )
@@ -156,5 +171,12 @@ fun RecuperarPasswordScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun RecuperarPreview() {
-    VozinhaTheme { RecuperarPasswordScreen({ true }, {}) }
+    VozinhaTheme {
+        RecuperarPasswordScreen(
+            ocupado = false,
+            onCorreoRegistrado = { true },
+            onRecuperar = { _, listo -> listo(null) },
+            onVolver = {}
+        )
+    }
 }

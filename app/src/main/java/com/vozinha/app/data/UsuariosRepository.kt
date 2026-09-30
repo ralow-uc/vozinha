@@ -55,6 +55,23 @@ object UsuariosRepository {
      */
     fun buscarPorCorreo(correo: String): Usuario? = registrados.conCorreo(correo)
 
+    /**
+     * Reemplaza la ficha de un usuario conservando su posición en el arreglo.
+     *
+     * Completa la letra U del CRUD: el correo identifica al usuario y el resto
+     * de los datos se puede editar.
+     */
+    fun reemplazar(correo: String, usuario: Usuario): Boolean {
+        val indice = registrados.indexOfFirst { it.correo.equals(correo.normalizado(), ignoreCase = true) }
+        if (indice < 0) return false
+        registrados[indice] = usuario.copy(correo = usuario.correo.normalizado())
+        return true
+    }
+
+    /** Quita un usuario del arreglo. Completa la letra D del CRUD. */
+    fun eliminarUsuario(correo: String): Boolean =
+        registrados.removeAll { it.correo.equals(correo.normalizado(), ignoreCase = true) }
+
     /** Deja el arreglo con los cinco usuarios iniciales. */
     fun restaurar() {
         registrados.clear()

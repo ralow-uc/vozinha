@@ -67,8 +67,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun RegistroScreen(
     totalUsuarios: Int,
+    ocupado: Boolean,
     onCorreoRegistrado: (String) -> Boolean,
-    onRegistrar: (Usuario) -> ResultadoRegistro,
+    onRegistrar: (Usuario, (ResultadoRegistro) -> Unit) -> Unit,
     onRegistroCompleto: () -> Unit,
     onVolver: () -> Unit
 ) {
@@ -82,7 +83,6 @@ fun RegistroScreen(
     var aceptaTerminos by rememberSaveable { mutableStateOf(false) }
     var intentoEnvio by rememberSaveable { mutableStateOf(false) }
     var mostrarExito by rememberSaveable { mutableStateOf(false) }
-    var usuariosTrasRegistro by rememberSaveable { mutableIntStateOf(totalUsuarios) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -217,7 +217,8 @@ fun RegistroScreen(
             )
 
             BotonPrimario(
-                texto = "Crear mi cuenta",
+                texto = if (ocupado) "Creando la cuenta..." else "Crear mi cuenta",
+                habilitado = !ocupado,
                 icono = Icons.Filled.PersonAdd,
                 onClick = {
                     intentoEnvio = true
@@ -241,15 +242,15 @@ fun RegistroScreen(
                                 tipoUsuario = tipoUsuario,
                                 medioPreferido = medioPreferido
                             )
-                            when (val resultado = onRegistrar(nuevo)) {
-                                is ResultadoRegistro.Exitoso -> {
-                                    usuariosTrasRegistro = resultado.totalUsuarios
-                                    Vibrador.confirmar(context)
-                                    mostrarExito = true
-                                }
+                            onRegistrar(nuevo) { resultado ->
+                                when (resultado) {
+                                    is ResultadoRegistro.Exitoso -> {
+                                        Vibrador.confirmar(context)
+                                        mostrarExito = true
+                                    }
 
-                                ResultadoRegistro.CorreoRepetido ->
-                                    avisar("Ese correo ya tiene una cuenta registrada.")
+                                    is ResultadoRegistro.Rechazado -> avisar(resultado.motivo)
+                                }
                             }
                         }
                     }
@@ -266,8 +267,8 @@ fun RegistroScreen(
             title = { Text("Cuenta creada") },
             text = {
                 Text(
-                    text = "Listo ${nombre.trim()}, tu cuenta quedó registrada. Ahora hay " +
-                        "$usuariosTrasRegistro usuarios y puedes ingresar con tu correo.",
+                    text = "Listo ${nombre.normalizado()}, tu cuenta quedó registrada. " +
+                        "Ya puedes ingresar con ${correo.normalizado()} y tu contraseña.",
                     style = MaterialTheme.typography.bodyLarge
                 )
             },
@@ -288,5 +289,14 @@ fun RegistroScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun RegistroPreview() {
-    VozinhaTheme { RegistroScreen(5, { false }, { ResultadoRegistro.Exitoso(6) }, {}, {}) }
+    VozinhaTheme {
+        RegistroScreen(
+            totalUsuarios = 5,
+            ocupado = false,
+            onCorreoRegistrado = { false },
+            onRegistrar = { _, listo -> listo(ResultadoRegistro.Exitoso(6)) },
+            onRegistroCompleto = {},
+            onVolver = {}
+        )
+    }
 }

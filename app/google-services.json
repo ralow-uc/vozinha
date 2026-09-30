@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "747441013421",
+    "project_id": "vozinha-1b610",
+    "storage_bucket": "vozinha-1b610.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747441013421:android:bca60a92f1068bdd1ebc24",
+        "android_client_info": {
+          "package_name": "com.vozinha.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8Cvlfm7uQTmLKS0hIZ5heOzbC5-mfPMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
